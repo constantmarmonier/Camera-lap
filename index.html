@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Drone Camera Lap Timer</title>
+
+  <style>
+    :root {
+      --bg: #111318;
+      --panel: #1b1f27;
+      --panel2: #252b36;
+      --text: #f3f5f8;
+      --muted: #aab2c0;
+      --accent: #36d399;
+      --danger: #ff5c7a;
+      --warn: #ffd166;
+      --line: #333b49;
+      --blue: #5ab0ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow-x: hidden;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    .status-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--panel2);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .status-pill.active {
+      color: #06130e;
+      background: var(--accent);
+      font-weight: 700;
+    }
+
+    .camera-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #050609;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+      touch-action: none;
+    }
+
+    video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: auto;
+    }
+
+    .hidden-canvas {
+      display: none;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 76px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .value.small {
+      font-size: 18px;
+    }
+
+    .signal-bar {
+      height: 10px;
+      background: #0a0c10;
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      margin-top: 10px;
+    }
+
+    .signal-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 70ms linear;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--panel2);
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #06130e;
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: #240008;
+    }
+
+    button.warn {
+      background: var(--warn);
+      color: #1c1400;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 110px 1fr 66px;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .slider-row label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    select {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: var(--panel2);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    select:disabled {
+      opacity: 0.55;
+    }
+
+    .num {
+      text-align: right;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+    }
+
+    .help {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .lap-panel {
+      margin-top: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .lap-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .lap-panel-header h2 {
+      font-size: 16px;
+      margin: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: rgba(255,255,255,0.02);
+    }
+
+    tr.best td {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 18px 12px;
+      text-align: center;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 12px 2px 4px;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        padding: 10px;
+      }
+
+      header {
+        align-items: flex-start;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .button-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .slider-row {
+        grid-template-columns: 92px 1fr 58px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <h1>Drone Camera Lap Timer</h1>
+      <div id="raceStatus" class="status-pill">Stopped</div>
+    </header>
+
+    <div class="camera-wrap" id="cameraWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <canvas id="workCanvas" class="hidden-canvas"></canvas>
+
+    <div class="cards">
+      <div class="card">
+        <div class="label">Laps</div>
+        <div class="value" id="lapCount">0</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Last Lap</div>
+        <div class="value small" id="lastLap">—</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Best Lap</div>
+        <div class="value small" id="bestLap">—</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Signal</div>
+        <div class="value small" id="signalValue">0.0</div>
+        <div class="signal-bar">
+          <div id="signalFill" class="signal-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="panel">
+        <div class="slider-row">
+          <label for="cameraSelect">Camera</label>
+          <select id="cameraSelect" disabled>
+            <option value="">Default front camera</option>
+          </select>
+          <button id="refreshCamerasBtn" style="padding: 8px; min-height: 40px;">Refresh</button>
+        </div>
+
+        <div class="button-grid">
+          <button id="startCameraBtn" class="primary">Start Camera</button>
+          <button id="calibrateBtn">Calibrate</button>
+          <button id="startRaceBtn" class="primary">Start Race</button>
+          <button id="stopRaceBtn" class="warn">Stop Race</button>
+          <button id="resetBtn" class="danger">Reset</button>
+          <button id="exportBtn">Export CSV</button>
+        </div>
+
+        <div class="help">
+          Place the phone flat under the gate with the front camera facing up.
+          Drag the green box so it covers the area where the drone passes.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="slider-row">
+          <label for="thresholdSlider">Threshold</label>
+          <input id="thresholdSlider" type="range" min="2" max="120" value="28" />
+          <div class="num" id="thresholdLabel">28</div>
+        </div>
+
+        <div class="slider-row">
+          <label for="cooldownSlider">Cooldown</label>
+          <input id="cooldownSlider" type="range" min="300" max="5000" step="100" value="1800" />
+          <div class="num" id="cooldownLabel">1.8s</div>
+        </div>
+
+        <div class="slider-row">
+          <label for="minPeakSlider">Min Peak</label>
+          <input id="minPeakSlider" type="range" min="0" max="300" step="10" value="40" />
+          <div class="num" id="minPeakLabel">40ms</div>
+        </div>
+
+        <div class="help">
+          If it misses laps, reduce threshold. If it false-triggers, increase threshold or cooldown.
+          Calibrate when the gate area is empty.
+        </div>
+      </div>
+    </div>
+
+    <div class="lap-panel">
+      <div class="lap-panel-header">
+        <h2>Lap Table</h2>
+        <button id="deleteLastBtn">Delete Last Lap</button>
+      </div>
+
+      <div id="tableWrap">
+        <div class="empty">No laps recorded yet.</div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Camera access normally requires HTTPS or localhost. GitHub Pages is a good place to host this file for phone testing.
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById("video");
+    const overlay = document.getElementById("overlay");
+    const overlayCtx = overlay.getContext("2d");
+
+    const workCanvas = document.getElementById("workCanvas");
+    const workCtx = workCanvas.getContext("2d", { willReadFrequently: true });
+
+    const cameraWrap = document.getElementById("cameraWrap");
+
+    const startCameraBtn = document.getElementById("startCameraBtn");
+    const calibrateBtn = document.getElementById("calibrateBtn");
+    const startRaceBtn = document.getElementById("startRaceBtn");
+    const stopRaceBtn = document.getElementById("stopRaceBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const deleteLastBtn = document.getElementById("deleteLastBtn");
+    const cameraSelect = document.getElementById("cameraSelect");
+    const refreshCamerasBtn = document.getElementById("refreshCamerasBtn");
+
+    const thresholdSlider = document.getElementById("thresholdSlider");
+    const cooldownSlider = document.getElementById("cooldownSlider");
+    const minPeakSlider = document.getElementById("minPeakSlider");
+
+    const thresholdLabel = document.getElementById("thresholdLabel");
+    const cooldownLabel = document.getElementById("cooldownLabel");
+    const minPeakLabel = document.getElementById("minPeakLabel");
+
+    const lapCountEl = document.getElementById("lapCount");
+    const lastLapEl = document.getElementById("lastLap");
+    const bestLapEl = document.getElementById("bestLap");
+    const signalValueEl = document.getElementById("signalValue");
+    const signalFillEl = document.getElementById("signalFill");
+    const raceStatusEl = document.getElementById("raceStatus");
+    const tableWrap = document.getElementById("tableWrap");
+
+    let cameraReady = false;
+    let running = false;
+    let currentStream = null;
+
+    let previousFrame = null;
+    let calibrationFrame = null;
+
+    let raceStartMs = 0;
+    let lastLapMs = 0;
+    let lastTriggerMs = 0;
+    let peakStartedMs = 0;
+    let inPeak = false;
+
+    let laps = [];
+    let frameLoopId = 0;
+
+    let threshold = Number(thresholdSlider.value);
+    let cooldownMs = Number(cooldownSlider.value);
+    let minPeakMs = Number(minPeakSlider.value);
+
+    // ROI values are normalized: 0 to 1 relative to the video image.
+    let roi = {
+      x: 0.25,
+      y: 0.25,
+      w: 0.50,
+      h: 0.50
+    };
+
+    let dragMode = null;
+    let dragStart = null;
+
+    const HANDLE_SIZE = 18;
+
+    function formatSeconds(ms) {
+      return (ms / 1000).toFixed(3) + " s";
+    }
+
+    function setRaceStatus(text, active) {
+      raceStatusEl.textContent = text;
+      raceStatusEl.classList.toggle("active", active);
+    }
+
+    function updateControlLabels() {
+      threshold = Number(thresholdSlider.value);
+      cooldownMs = Number(cooldownSlider.value);
+      minPeakMs = Number(minPeakSlider.value);
+
+      thresholdLabel.textContent = threshold.toString();
+      cooldownLabel.textContent = (cooldownMs / 1000).toFixed(1) + "s";
+      minPeakLabel.textContent = minPeakMs + "ms";
+    }
+
+    thresholdSlider.addEventListener("input", updateControlLabels);
+    cooldownSlider.addEventListener("input", updateControlLabels);
+    minPeakSlider.addEventListener("input", updateControlLabels);
+    updateControlLabels();
+
+    function resizeOverlay() {
+      const rect = cameraWrap.getBoundingClientRect();
+      overlay.width = Math.round(rect.width * window.devicePixelRatio);
+      overlay.height = Math.round(rect.height * window.devicePixelRatio);
+      overlay.style.width = rect.width + "px";
+      overlay.style.height = rect.height + "px";
+      overlayCtx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+      drawOverlay();
+    }
+
+    window.addEventListener("resize", resizeOverlay);
+    window.addEventListener("orientationchange", () => setTimeout(resizeOverlay, 250));
+
+    function getDisplayRect() {
+      const rect = cameraWrap.getBoundingClientRect();
+      return {
+        w: rect.width,
+        h: rect.height
+      };
+    }
+
+    function roiToDisplayRect() {
+      const d = getDisplayRect();
+      return {
+        x: roi.x * d.w,
+        y: roi.y * d.h,
+        w: roi.w * d.w,
+        h: roi.h * d.h
+      };
+    }
+
+    function displayPointToNorm(clientX, clientY) {
+      const rect = overlay.getBoundingClientRect();
+      return {
+        x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+        y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+      };
+    }
+
+    function clampRoi() {
+      const minSize = 0.08;
+
+      roi.w = Math.max(minSize, Math.min(1, roi.w));
+      roi.h = Math.max(minSize, Math.min(1, roi.h));
+
+      roi.x = Math.max(0, Math.min(1 - roi.w, roi.x));
+      roi.y = Math.max(0, Math.min(1 - roi.h, roi.y));
+    }
+
+    function drawOverlay() {
+      const d = getDisplayRect();
+      overlayCtx.clearRect(0, 0, d.w, d.h);
+
+      const r = roiToDisplayRect();
+
+      overlayCtx.save();
+
+      overlayCtx.fillStyle = "rgba(0, 0, 0, 0.28)";
+      overlayCtx.fillRect(0, 0, d.w, d.h);
+      overlayCtx.clearRect(r.x, r.y, r.w, r.h);
+
+      overlayCtx.strokeStyle = "#36d399";
+      overlayCtx.lineWidth = 3;
+      overlayCtx.setLineDash([]);
+      overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
+
+      overlayCtx.fillStyle = "rgba(54, 211, 153, 0.22)";
+      overlayCtx.fillRect(r.x, r.y, r.w, r.h);
+
+      overlayCtx.fillStyle = "#36d399";
+      drawHandle(r.x, r.y);
+      drawHandle(r.x + r.w, r.y);
+      drawHandle(r.x, r.y + r.h);
+      drawHandle(r.x + r.w, r.y + r.h);
+
+      overlayCtx.font = "700 13px Arial";
+      overlayCtx.fillStyle = "#06130e";
+      const label = "DETECTION ZONE";
+      const textW = overlayCtx.measureText(label).width;
+      overlayCtx.fillStyle = "#36d399";
+      overlayCtx.fillRect(r.x + 8, r.y + 8, textW + 16, 24);
+      overlayCtx.fillStyle = "#06130e";
+      overlayCtx.fillText(label, r.x + 16, r.y + 25);
+
+      overlayCtx.restore();
+    }
+
+    function drawHandle(x, y) {
+      overlayCtx.beginPath();
+      overlayCtx.arc(x, y, HANDLE_SIZE / 2, 0, Math.PI * 2);
+      overlayCtx.fill();
+    }
+
+    function hitTest(clientX, clientY) {
+      const p = displayPointToNorm(clientX, clientY);
+      const r = roiToDisplayRect();
+      const rect = overlay.getBoundingClientRect();
+
+      const px = p.x * rect.width;
+      const py = p.y * rect.height;
+
+      const handles = [
+        { name: "nw", x: r.x, y: r.y },
+        { name: "ne", x: r.x + r.w, y: r.y },
+        { name: "sw", x: r.x, y: r.y + r.h },
+        { name: "se", x: r.x + r.w, y: r.y + r.h }
+      ];
+
+      for (const h of handles) {
+        const dist = Math.hypot(px - h.x, py - h.y);
+        if (dist <= HANDLE_SIZE * 1.4) {
+          return h.name;
+        }
+      }
+
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
+        return "move";
+      }
+
+      return null;
+    }
+
+    overlay.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      overlay.setPointerCapture(e.pointerId);
+
+      dragMode = hitTest(e.clientX, e.clientY) || "move";
+
+      const p = displayPointToNorm(e.clientX, e.clientY);
+      dragStart = {
+        pointer: p,
+        roi: { ...roi }
+      };
+    });
+
+    overlay.addEventListener("pointermove", (e) => {
+      if (!dragMode || !dragStart) return;
+      e.preventDefault();
+
+      const p = displayPointToNorm(e.clientX, e.clientY);
+      const dx = p.x - dragStart.pointer.x;
+      const dy = p.y - dragStart.pointer.y;
+
+      const start = dragStart.roi;
+
+      if (dragMode === "move") {
+        roi.x = start.x + dx;
+        roi.y = start.y + dy;
+      }
+
+      if (dragMode === "nw") {
+        roi.x = start.x + dx;
+        roi.y = start.y + dy;
+        roi.w = start.w - dx;
+        roi.h = start.h - dy;
+      }
+
+      if (dragMode === "ne") {
+        roi.y = start.y + dy;
+        roi.w = start.w + dx;
+        roi.h = start.h - dy;
+      }
+
+      if (dragMode === "sw") {
+        roi.x = start.x + dx;
+        roi.w = start.w - dx;
+        roi.h = start.h + dy;
+      }
+
+      if (dragMode === "se") {
+        roi.w = start.w + dx;
+        roi.h = start.h + dy;
+      }
+
+      clampRoi();
+      drawOverlay();
+    });
+
+    overlay.addEventListener("pointerup", (e) => {
+      e.preventDefault();
+      dragMode = null;
+      dragStart = null;
+    });
+
+    overlay.addEventListener("pointercancel", () => {
+      dragMode = null;
+      dragStart = null;
+    });
+
+    function stopCameraStream() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+    }
+
+    async function populateCameraList(selectedDeviceId = "") {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return;
+      }
+
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(device => device.kind === "videoinput");
+
+        cameraSelect.innerHTML = "";
+
+        if (videoInputs.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No camera found";
+          cameraSelect.appendChild(opt);
+          cameraSelect.disabled = true;
+          return;
+        }
+
+        videoInputs.forEach((device, index) => {
+          const opt = document.createElement("option");
+          opt.value = device.deviceId;
+          opt.textContent = device.label || `Camera ${index + 1}`;
+          cameraSelect.appendChild(opt);
+        });
+
+        cameraSelect.disabled = false;
+
+        if (selectedDeviceId) {
+          cameraSelect.value = selectedDeviceId;
+        }
+      } catch (err) {
+        console.warn("Could not list cameras:", err);
+      }
+    }
+
+    function getCameraConstraints() {
+      const selectedDeviceId = cameraSelect.value;
+
+      if (selectedDeviceId) {
+        return {
+          audio: false,
+          video: {
+            deviceId: { exact: selectedDeviceId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 60, max: 60 }
+          }
+        };
+      }
+
+      return {
+        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 60, max: 60 }
+        }
+      };
+    }
+
+    async function startCamera() {
+      try {
+        stopCameraStream();
+
+        const constraints = getCameraConstraints();
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        currentStream = stream;
+        video.srcObject = stream;
+
+        await video.play();
+
+        workCanvas.width = video.videoWidth || 640;
+        workCanvas.height = video.videoHeight || 480;
+
+        cameraReady = true;
+        frameLoopId++;
+        previousFrame = null;
+        calibrationFrame = null;
+
+        const track = stream.getVideoTracks()[0];
+        const settings = track ? track.getSettings() : {};
+        await populateCameraList(settings.deviceId || cameraSelect.value || "");
+
+        resizeOverlay();
+        processFrame(frameLoopId);
+
+        startCameraBtn.textContent = "Camera On";
+        startCameraBtn.disabled = true;
+      } catch (err) {
+        alert("Camera could not start. Use HTTPS or localhost, and allow camera permission.\n\n" + err.message);
+      }
+    }
+
+    function getCurrentRoiImageData() {
+      if (!cameraReady || !video.videoWidth || !video.videoHeight) {
+        return null;
+      }
+
+      workCtx.drawImage(video, 0, 0, workCanvas.width, workCanvas.height);
+
+      const x = Math.floor(roi.x * workCanvas.width);
+      const y = Math.floor(roi.y * workCanvas.height);
+      const w = Math.max(2, Math.floor(roi.w * workCanvas.width));
+      const h = Math.max(2, Math.floor(roi.h * workCanvas.height));
+
+      return workCtx.getImageData(x, y, w, h);
+    }
+
+    function frameDifference(current, reference) {
+      if (!current || !reference) return 0;
+
+      const a = current.data;
+      const b = reference.data;
+
+      const len = Math.min(a.length, b.length);
+      if (len <= 0) return 0;
+
+      let total = 0;
+      let count = 0;
+
+      // Step by 16 bytes = sample every 4th pixel.
+      // Faster on phones while still sensitive enough for motion/change detection.
+      for (let i = 0; i < len; i += 16) {
+        const dr = Math.abs(a[i] - b[i]);
+        const dg = Math.abs(a[i + 1] - b[i + 1]);
+        const db = Math.abs(a[i + 2] - b[i + 2]);
+
+        total += (dr + dg + db) / 3;
+        count++;
+      }
+
+      return count > 0 ? total / count : 0;
+    }
+
+    function processFrame(loopId = frameLoopId) {
+      if (!cameraReady || loopId !== frameLoopId) return;
+
+      const frame = getCurrentRoiImageData();
+
+      let reference = calibrationFrame || previousFrame;
+      const diff = reference ? frameDifference(frame, reference) : 0;
+
+      signalValueEl.textContent = diff.toFixed(1);
+      signalFillEl.style.width = Math.max(0, Math.min(100, (diff / threshold) * 100)) + "%";
+
+      const now = performance.now();
+
+      const aboveThreshold = diff >= threshold;
+      const outsideCooldown = now - lastTriggerMs >= cooldownMs;
+
+      if (running && aboveThreshold && outsideCooldown) {
+        if (!inPeak) {
+          inPeak = true;
+          peakStartedMs = now;
+        }
+
+        const peakDuration = now - peakStartedMs;
+
+        if (peakDuration >= minPeakMs) {
+          recordLap(now, diff);
+          inPeak = false;
+        }
+      } else if (!aboveThreshold) {
+        inPeak = false;
+      }
+
+      // Keep adapting slowly if no calibration frame is used.
+      // If calibrated, keep the calibrated background stable.
+      if (!calibrationFrame) {
+        previousFrame = frame;
+      }
+
+      drawOverlay();
+
+      if ("requestVideoFrameCallback" in video) {
+        video.requestVideoFrameCallback(() => processFrame(loopId));
+      } else {
+        requestAnimationFrame(() => processFrame(loopId));
+      }
+    }
+
+    function calibrate() {
+      const frame = getCurrentRoiImageData();
+
+      if (!frame) {
+        alert("Start the camera before calibrating.");
+        return;
+      }
+
+      calibrationFrame = frame;
+      previousFrame = null;
+      inPeak = false;
+
+      calibrateBtn.textContent = "Calibrated";
+      setTimeout(() => calibrateBtn.textContent = "Calibrate", 900);
+    }
+
+    function startRace() {
+      if (!cameraReady) {
+        alert("Start the camera first.");
+        return;
+      }
+
+      running = true;
+      raceStartMs = performance.now();
+      lastLapMs = raceStartMs;
+      lastTriggerMs = 0;
+      inPeak = false;
+
+      setRaceStatus("Running", true);
+    }
+
+    function stopRace() {
+      running = false;
+      inPeak = false;
+      setRaceStatus("Stopped", false);
+    }
+
+    function resetRace() {
+      running = false;
+      laps = [];
+      raceStartMs = 0;
+      lastLapMs = 0;
+      lastTriggerMs = 0;
+      inPeak = false;
+      previousFrame = null;
+
+      lapCountEl.textContent = "0";
+      lastLapEl.textContent = "—";
+      bestLapEl.textContent = "—";
+      setRaceStatus("Stopped", false);
+      renderTable();
+    }
+
+    function recordLap(now, signal) {
+      const lapNumber = laps.length + 1;
+
+      let lapTimeMs;
+      if (laps.length === 0) {
+        lapTimeMs = now - raceStartMs;
+      } else {
+        lapTimeMs = now - lastLapMs;
+      }
+
+      const totalTimeMs = now - raceStartMs;
+
+      lastLapMs = now;
+      lastTriggerMs = now;
+
+      const lap = {
+        lap: lapNumber,
+        lapTimeMs,
+        totalTimeMs,
+        signal
+      };
+
+      laps.push(lap);
+
+      lapCountEl.textContent = laps.length.toString();
+      lastLapEl.textContent = formatSeconds(lapTimeMs);
+
+      const best = getBestLap();
+      bestLapEl.textContent = best ? formatSeconds(best.lapTimeMs) : "—";
+
+      beep();
+      renderTable();
+    }
+
+    function getBestLap() {
+      if (laps.length === 0) return null;
+
+      // Best lap includes lap 1. If you want lap 1 excluded because it starts from button press,
+      // change this to: const valid = laps.slice(1);
+      const valid = laps;
+
+      return valid.reduce((best, lap) => {
+        return lap.lapTimeMs < best.lapTimeMs ? lap : best;
+      }, valid[0]);
+    }
+
+    function renderTable() {
+      if (laps.length === 0) {
+        tableWrap.innerHTML = '<div class="empty">No laps recorded yet.</div>';
+        return;
+      }
+
+      const best = getBestLap();
+      const bestLapNumber = best ? best.lap : null;
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Lap</th>
+              <th>Lap Time</th>
+              <th>Total Time</th>
+              <th>Signal</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      for (const lap of laps) {
+        const cls = lap.lap === bestLapNumber ? ' class="best"' : "";
+        html += `
+          <tr${cls}>
+            <td>${lap.lap}</td>
+            <td>${formatSeconds(lap.lapTimeMs)}</td>
+            <td>${formatSeconds(lap.totalTimeMs)}</td>
+            <td>${lap.signal.toFixed(1)}</td>
+          </tr>
+        `;
+      }
+
+      html += `
+          </tbody>
+        </table>
+      `;
+
+      tableWrap.innerHTML = html;
+    }
+
+    function deleteLastLap() {
+      if (laps.length === 0) return;
+
+      laps.pop();
+
+      for (let i = 0; i < laps.length; i++) {
+        laps[i].lap = i + 1;
+      }
+
+      lapCountEl.textContent = laps.length.toString();
+
+      if (laps.length === 0) {
+        lastLapEl.textContent = "—";
+        bestLapEl.textContent = "—";
+        lastLapMs = running ? performance.now() : 0;
+      } else {
+        const last = laps[laps.length - 1];
+        lastLapEl.textContent = formatSeconds(last.lapTimeMs);
+        bestLapEl.textContent = formatSeconds(getBestLap().lapTimeMs);
+        lastLapMs = raceStartMs + last.totalTimeMs;
+      }
+
+      renderTable();
+    }
+
+    function exportCsv() {
+      if (laps.length === 0) {
+        alert("No laps to export.");
+        return;
+      }
+
+      const lines = [
+        "Lap,Lap Time Seconds,Total Time Seconds,Signal"
+      ];
+
+      for (const lap of laps) {
+        lines.push([
+          lap.lap,
+          (lap.lapTimeMs / 1000).toFixed(3),
+          (lap.totalTimeMs / 1000).toFixed(3),
+          lap.signal.toFixed(1)
+        ].join(","));
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "drone_laps.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
+    }
+
+    function beep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value = 880;
+
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.14);
+      } catch (err) {
+        // Sound is optional. Ignore browser audio restrictions.
+      }
+    }
+
+    startCameraBtn.addEventListener("click", startCamera);
+
+    refreshCamerasBtn.addEventListener("click", async () => {
+      await populateCameraList(cameraSelect.value);
+    });
+
+    cameraSelect.addEventListener("change", async () => {
+      if (cameraReady) {
+        const wasRunning = running;
+        running = false;
+        await startCamera();
+        running = wasRunning;
+        setRaceStatus(running ? "Running" : "Stopped", running);
+      }
+    });
+
+    calibrateBtn.addEventListener("click", calibrate);
+    startRaceBtn.addEventListener("click", startRace);
+    stopRaceBtn.addEventListener("click", stopRace);
+    resetBtn.addEventListener("click", resetRace);
+    exportBtn.addEventListener("click", exportCsv);
+    deleteLastBtn.addEventListener("click", deleteLastLap);
+
+    populateCameraList();
+    resizeOverlay();
+    renderTable();
+  </script>
+</body>
+</html>
