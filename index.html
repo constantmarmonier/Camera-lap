@@ -16,7 +16,6 @@
       --danger: #ff5c7a;
       --warn: #ffd166;
       --line: #333b49;
-      --blue: #5ab0ff;
     }
 
     * {
@@ -65,7 +64,7 @@
     .status-pill.active {
       color: #06130e;
       background: var(--accent);
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .camera-wrap {
@@ -114,6 +113,32 @@
       border-radius: 14px;
       padding: 12px;
       min-height: 76px;
+      transition: background 100ms ease, color 100ms ease, box-shadow 100ms ease, border-color 100ms ease;
+    }
+
+    .card.signal-card.flash {
+      background: var(--accent);
+      color: #06130e;
+      border-color: rgba(255,255,255,0.45);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.45),
+        0 0 0 3px rgba(54, 211, 153, 0.28),
+        0 16px 36px rgba(54, 211, 153, 0.22);
+    }
+
+    .card.signal-card.flash .label,
+    .card.signal-card.flash .value {
+      color: #06130e;
+    }
+
+    .card.signal-card.flash .signal-bar {
+      background: rgba(6, 19, 14, 0.2);
+      border-color: rgba(6, 19, 14, 0.28);
+    }
+
+    .card.signal-card.flash .signal-fill {
+      background: #06130e;
+      width: 100% !important;
     }
 
     .label {
@@ -164,45 +189,71 @@
 
     .button-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 8px;
     }
 
     button {
-      border: 0;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 4px solid rgba(0,0,0,0.35);
       border-radius: 12px;
       padding: 12px 10px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text);
-      background: var(--panel2);
+      background: linear-gradient(180deg, #343b49 0%, #202632 100%);
       cursor: pointer;
       min-height: 44px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 5px 0 rgba(0,0,0,0.28),
+        0 12px 22px rgba(0,0,0,0.22);
+      transform: translateY(0);
+      transition: transform 80ms ease, box-shadow 80ms ease, filter 120ms ease, background 120ms ease;
+      user-select: none;
+    }
+
+    button:active,
+    button.is-pressed {
+      transform: translateY(4px);
+      border-bottom-width: 1px;
+      box-shadow:
+        inset 0 2px 5px rgba(0,0,0,0.35),
+        0 1px 0 rgba(0,0,0,0.22),
+        0 5px 12px rgba(0,0,0,0.18);
+      filter: brightness(0.96);
     }
 
     button.primary {
-      background: var(--accent);
+      background: linear-gradient(180deg, #54efb2 0%, #25b77d 100%);
       color: #06130e;
     }
 
     button.danger {
-      background: var(--danger);
+      background: linear-gradient(180deg, #ff7b94 0%, #e53d61 100%);
       color: #240008;
     }
 
     button.warn {
-      background: var(--warn);
+      background: linear-gradient(180deg, #ffe08a 0%, #e4a928 100%);
       color: #1c1400;
+    }
+
+    button.stop {
+      background: linear-gradient(180deg, #ff7b94 0%, #e53d61 100%);
+      color: #240008;
     }
 
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
     .slider-row {
       display: grid;
-      grid-template-columns: 110px 1fr 66px;
+      grid-template-columns: 110px 1fr 70px;
       align-items: center;
       gap: 10px;
       margin: 12px 0;
@@ -260,6 +311,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       padding: 12px;
       border-bottom: 1px solid var(--line);
     }
@@ -328,7 +380,7 @@
       }
 
       .slider-row {
-        grid-template-columns: 92px 1fr 58px;
+        grid-template-columns: 92px 1fr 62px;
       }
 
       h1 {
@@ -368,7 +420,7 @@
         <div class="value small" id="bestLap">—</div>
       </div>
 
-      <div class="card">
+      <div class="card signal-card" id="signalCard">
         <div class="label">Signal</div>
         <div class="value small" id="signalValue">0.0</div>
         <div class="signal-bar">
@@ -388,17 +440,16 @@
         </div>
 
         <div class="button-grid">
-          <button id="startCameraBtn" class="primary">Start Camera</button>
+          <button id="cameraBtn" class="primary">Start Camera</button>
           <button id="calibrateBtn">Calibrate</button>
-          <button id="startRaceBtn" class="primary">Start Race</button>
-          <button id="stopRaceBtn" class="warn">Stop Race</button>
+          <button id="raceBtn" class="primary">Start Race</button>
           <button id="resetBtn" class="danger">Reset</button>
           <button id="exportBtn">Export CSV</button>
         </div>
 
         <div class="help">
-          Place the phone flat under the gate with the front camera facing up.
-          Drag the green box so it covers the area where the drone passes.
+          Place the phone flat under the gate with the camera facing up.
+          Drag the green box over the area where the drone passes.
         </div>
       </div>
 
@@ -422,8 +473,7 @@
         </div>
 
         <div class="help">
-          If it misses laps, reduce threshold. If it false-triggers, increase threshold or cooldown.
-          Calibrate when the gate area is empty.
+          Signal flash is always active while the camera is on. Laps are only saved when the race is running.
         </div>
       </div>
     </div>
@@ -440,7 +490,7 @@
     </div>
 
     <div class="footer-note">
-      Camera access normally requires HTTPS or localhost. GitHub Pages is a good place to host this file for phone testing.
+      Camera access normally requires HTTPS or localhost. GitHub Pages is a good place to host this app for phone testing.
     </div>
   </div>
 
@@ -454,10 +504,9 @@
 
     const cameraWrap = document.getElementById("cameraWrap");
 
-    const startCameraBtn = document.getElementById("startCameraBtn");
+    const cameraBtn = document.getElementById("cameraBtn");
     const calibrateBtn = document.getElementById("calibrateBtn");
-    const startRaceBtn = document.getElementById("startRaceBtn");
-    const stopRaceBtn = document.getElementById("stopRaceBtn");
+    const raceBtn = document.getElementById("raceBtn");
     const resetBtn = document.getElementById("resetBtn");
     const exportBtn = document.getElementById("exportBtn");
     const deleteLastBtn = document.getElementById("deleteLastBtn");
@@ -477,30 +526,32 @@
     const bestLapEl = document.getElementById("bestLap");
     const signalValueEl = document.getElementById("signalValue");
     const signalFillEl = document.getElementById("signalFill");
+    const signalCardEl = document.getElementById("signalCard");
     const raceStatusEl = document.getElementById("raceStatus");
     const tableWrap = document.getElementById("tableWrap");
 
     let cameraReady = false;
-    let running = false;
+    let cameraRunning = false;
+    let raceRunning = false;
     let currentStream = null;
+    let frameLoopId = 0;
 
     let previousFrame = null;
     let calibrationFrame = null;
 
     let raceStartMs = 0;
     let lastLapMs = 0;
-    let lastTriggerMs = 0;
+    let lastSignalMs = 0;
     let peakStartedMs = 0;
     let inPeak = false;
+    let signalFlashTimer = null;
 
     let laps = [];
-    let frameLoopId = 0;
 
     let threshold = Number(thresholdSlider.value);
     let cooldownMs = Number(cooldownSlider.value);
     let minPeakMs = Number(minPeakSlider.value);
 
-    // ROI values are normalized: 0 to 1 relative to the video image.
     let roi = {
       x: 0.25,
       y: 0.25,
@@ -510,7 +561,6 @@
 
     let dragMode = null;
     let dragStart = null;
-
     const HANDLE_SIZE = 18;
 
     function formatSeconds(ms) {
@@ -578,10 +628,8 @@
 
     function clampRoi() {
       const minSize = 0.08;
-
       roi.w = Math.max(minSize, Math.min(1, roi.w));
       roi.h = Math.max(minSize, Math.min(1, roi.h));
-
       roi.x = Math.max(0, Math.min(1 - roi.w, roi.x));
       roi.y = Math.max(0, Math.min(1 - roi.h, roi.y));
     }
@@ -600,7 +648,6 @@
 
       overlayCtx.strokeStyle = "#36d399";
       overlayCtx.lineWidth = 3;
-      overlayCtx.setLineDash([]);
       overlayCtx.strokeRect(r.x, r.y, r.w, r.h);
 
       overlayCtx.fillStyle = "rgba(54, 211, 153, 0.22)";
@@ -613,7 +660,6 @@
       drawHandle(r.x + r.w, r.y + r.h);
 
       overlayCtx.font = "700 13px Arial";
-      overlayCtx.fillStyle = "#06130e";
       const label = "DETECTION ZONE";
       const textW = overlayCtx.measureText(label).width;
       overlayCtx.fillStyle = "#36d399";
@@ -679,7 +725,6 @@
       const p = displayPointToNorm(e.clientX, e.clientY);
       const dx = p.x - dragStart.pointer.x;
       const dy = p.y - dragStart.pointer.y;
-
       const start = dragStart.roi;
 
       if (dragMode === "move") {
@@ -731,6 +776,34 @@
         currentStream.getTracks().forEach(track => track.stop());
         currentStream = null;
       }
+    }
+
+    function stopCamera() {
+      stopCameraStream();
+
+      cameraReady = false;
+      cameraRunning = false;
+      raceRunning = false;
+      frameLoopId++;
+
+      video.srcObject = null;
+      previousFrame = null;
+      calibrationFrame = null;
+      inPeak = false;
+
+      cameraBtn.textContent = "Start Camera";
+      cameraBtn.classList.add("primary");
+      cameraBtn.classList.remove("stop", "is-pressed");
+
+      raceBtn.textContent = "Start Race";
+      raceBtn.classList.add("primary");
+      raceBtn.classList.remove("stop", "is-pressed");
+
+      setRaceStatus("Stopped", false);
+      signalValueEl.textContent = "0.0";
+      signalFillEl.style.width = "0%";
+      signalCardEl.classList.remove("flash");
+      drawOverlay();
     }
 
     async function populateCameraList(selectedDeviceId = "") {
@@ -800,8 +873,7 @@
       try {
         stopCameraStream();
 
-        const constraints = getCameraConstraints();
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await navigator.mediaDevices.getUserMedia(getCameraConstraints());
 
         currentStream = stream;
         video.srcObject = stream;
@@ -812,9 +884,11 @@
         workCanvas.height = video.videoHeight || 480;
 
         cameraReady = true;
+        cameraRunning = true;
         frameLoopId++;
         previousFrame = null;
         calibrationFrame = null;
+        inPeak = false;
 
         const track = stream.getVideoTracks()[0];
         const settings = track ? track.getSettings() : {};
@@ -823,10 +897,19 @@
         resizeOverlay();
         processFrame(frameLoopId);
 
-        startCameraBtn.textContent = "Camera On";
-        startCameraBtn.disabled = true;
+        cameraBtn.textContent = "Stop Camera";
+        cameraBtn.classList.remove("primary");
+        cameraBtn.classList.add("stop");
       } catch (err) {
         alert("Camera could not start. Use HTTPS or localhost, and allow camera permission.\n\n" + err.message);
+      }
+    }
+
+    async function toggleCamera() {
+      if (cameraRunning) {
+        stopCamera();
+      } else {
+        await startCamera();
       }
     }
 
@@ -850,15 +933,11 @@
 
       const a = current.data;
       const b = reference.data;
-
       const len = Math.min(a.length, b.length);
-      if (len <= 0) return 0;
 
       let total = 0;
       let count = 0;
 
-      // Step by 16 bytes = sample every 4th pixel.
-      // Faster on phones while still sensitive enough for motion/change detection.
       for (let i = 0; i < len; i += 16) {
         const dr = Math.abs(a[i] - b[i]);
         const dg = Math.abs(a[i + 1] - b[i + 1]);
@@ -875,19 +954,19 @@
       if (!cameraReady || loopId !== frameLoopId) return;
 
       const frame = getCurrentRoiImageData();
-
-      let reference = calibrationFrame || previousFrame;
+      const reference = calibrationFrame || previousFrame;
       const diff = reference ? frameDifference(frame, reference) : 0;
 
       signalValueEl.textContent = diff.toFixed(1);
       signalFillEl.style.width = Math.max(0, Math.min(100, (diff / threshold) * 100)) + "%";
 
       const now = performance.now();
-
       const aboveThreshold = diff >= threshold;
-      const outsideCooldown = now - lastTriggerMs >= cooldownMs;
+      const outsideSignalCooldown = now - lastSignalMs >= cooldownMs;
 
-      if (running && aboveThreshold && outsideCooldown) {
+      // Detection is always active while the camera is on.
+      // The signal card flashes even when the race is stopped.
+      if (aboveThreshold && outsideSignalCooldown) {
         if (!inPeak) {
           inPeak = true;
           peakStartedMs = now;
@@ -896,15 +975,13 @@
         const peakDuration = now - peakStartedMs;
 
         if (peakDuration >= minPeakMs) {
-          recordLap(now, diff);
+          registerSignal(now, diff);
           inPeak = false;
         }
       } else if (!aboveThreshold) {
         inPeak = false;
       }
 
-      // Keep adapting slowly if no calibration frame is used.
-      // If calibrated, keep the calibrated background stable.
       if (!calibrationFrame) {
         previousFrame = frame;
       }
@@ -940,35 +1017,79 @@
         return;
       }
 
-      running = true;
+      raceRunning = true;
       raceStartMs = performance.now();
       lastLapMs = raceStartMs;
-      lastTriggerMs = 0;
+      lastSignalMs = 0;
       inPeak = false;
+
+      raceBtn.textContent = "Stop Race";
+      raceBtn.classList.remove("primary");
+      raceBtn.classList.add("stop");
 
       setRaceStatus("Running", true);
     }
 
     function stopRace() {
-      running = false;
+      raceRunning = false;
       inPeak = false;
+
+      raceBtn.textContent = "Start Race";
+      raceBtn.classList.add("primary");
+      raceBtn.classList.remove("stop", "is-pressed");
+
       setRaceStatus("Stopped", false);
     }
 
+    function toggleRace() {
+      if (raceRunning) {
+        stopRace();
+      } else {
+        startRace();
+      }
+    }
+
     function resetRace() {
-      running = false;
+      raceRunning = false;
       laps = [];
       raceStartMs = 0;
       lastLapMs = 0;
-      lastTriggerMs = 0;
+      lastSignalMs = 0;
       inPeak = false;
       previousFrame = null;
+
+      raceBtn.textContent = "Start Race";
+      raceBtn.classList.add("primary");
+      raceBtn.classList.remove("stop", "is-pressed");
+
+      signalCardEl.classList.remove("flash");
 
       lapCountEl.textContent = "0";
       lastLapEl.textContent = "—";
       bestLapEl.textContent = "—";
       setRaceStatus("Stopped", false);
       renderTable();
+    }
+
+    function registerSignal(now, signal) {
+      lastSignalMs = now;
+      flashSignalCard();
+
+      if (raceRunning) {
+        recordLap(now, signal);
+      }
+    }
+
+    function flashSignalCard() {
+      signalCardEl.classList.add("flash");
+
+      if (signalFlashTimer) {
+        clearTimeout(signalFlashTimer);
+      }
+
+      signalFlashTimer = setTimeout(() => {
+        signalCardEl.classList.remove("flash");
+      }, 450);
     }
 
     function recordLap(now, signal) {
@@ -982,9 +1103,7 @@
       }
 
       const totalTimeMs = now - raceStartMs;
-
       lastLapMs = now;
-      lastTriggerMs = now;
 
       const lap = {
         lap: lapNumber,
@@ -1008,13 +1127,9 @@
     function getBestLap() {
       if (laps.length === 0) return null;
 
-      // Best lap includes lap 1. If you want lap 1 excluded because it starts from button press,
-      // change this to: const valid = laps.slice(1);
-      const valid = laps;
-
-      return valid.reduce((best, lap) => {
+      return laps.reduce((best, lap) => {
         return lap.lapTimeMs < best.lapTimeMs ? lap : best;
-      }, valid[0]);
+      }, laps[0]);
     }
 
     function renderTable() {
@@ -1073,7 +1188,7 @@
       if (laps.length === 0) {
         lastLapEl.textContent = "—";
         bestLapEl.textContent = "—";
-        lastLapMs = running ? performance.now() : 0;
+        lastLapMs = raceRunning ? performance.now() : 0;
       } else {
         const last = laps[laps.length - 1];
         lastLapEl.textContent = formatSeconds(last.lapTimeMs);
@@ -1138,29 +1253,39 @@
         osc.start();
         osc.stop(ctx.currentTime + 0.14);
       } catch (err) {
-        // Sound is optional. Ignore browser audio restrictions.
+        // Optional sound only.
       }
     }
 
-    startCameraBtn.addEventListener("click", startCamera);
+    cameraBtn.addEventListener("click", toggleCamera);
 
     refreshCamerasBtn.addEventListener("click", async () => {
       await populateCameraList(cameraSelect.value);
     });
 
     cameraSelect.addEventListener("change", async () => {
-      if (cameraReady) {
-        const wasRunning = running;
-        running = false;
+      if (cameraRunning) {
+        const wasRaceRunning = raceRunning;
+        raceRunning = false;
         await startCamera();
-        running = wasRunning;
-        setRaceStatus(running ? "Running" : "Stopped", running);
+        raceRunning = wasRaceRunning;
+
+        if (raceRunning) {
+          raceBtn.textContent = "Stop Race";
+          raceBtn.classList.remove("primary");
+          raceBtn.classList.add("stop");
+        } else {
+          raceBtn.textContent = "Start Race";
+          raceBtn.classList.add("primary");
+          raceBtn.classList.remove("stop", "is-pressed");
+        }
+
+        setRaceStatus(raceRunning ? "Running" : "Stopped", raceRunning);
       }
     });
 
     calibrateBtn.addEventListener("click", calibrate);
-    startRaceBtn.addEventListener("click", startRace);
-    stopRaceBtn.addEventListener("click", stopRace);
+    raceBtn.addEventListener("click", toggleRace);
     resetBtn.addEventListener("click", resetRace);
     exportBtn.addEventListener("click", exportCsv);
     deleteLastBtn.addEventListener("click", deleteLastLap);
